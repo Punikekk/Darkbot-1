@@ -2,18 +2,15 @@ package com.github.manolo8.darkbot.config;
 
 import com.github.manolo8.darkbot.config.types.Option;
 import com.github.manolo8.darkbot.core.itf.NpcExtraProvider;
+import eu.darkbot.api.entities.other.Ammo;
+import eu.darkbot.api.entities.other.Formation;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Option(key = "config.loot.npc_table.name")
-public class NpcInfo {
+public class NpcInfo implements eu.darkbot.api.config.NpcInfo {
 
     @Option(key = "config.loot.npc_table.radius")
     public double radius;
@@ -39,6 +36,36 @@ public class NpcInfo {
 
     @Option(key = "config.loot.npc_table.extra")
     public ExtraNpcInfo extra = new ExtraNpcInfo();
+
+    @Override
+    public int getPriority() {
+        return priority;
+    }
+
+    @Override
+    public double getRadius() {
+        return radius;
+    }
+
+    @Override
+    public Optional<Ammo.Laser> getAmmo() {
+        return Optional.empty();//????? :thonk:
+    }
+
+    @Override
+    public Optional<Formation> getFormation() {
+        return Optional.empty();
+    }
+
+    @Override
+    public boolean hasExtraFlag(ExtraFlag flag) {
+        return extra.has(flag.getId());
+    }
+
+    @Override
+    public void setExtraFlag(ExtraFlag flag, boolean active) {
+        extra.set(flag.getId(), active);
+    }
 
     public static class ExtraNpcInfo {
         private Set<String> flags = new HashSet<>();
