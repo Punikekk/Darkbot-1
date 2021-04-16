@@ -220,7 +220,7 @@ public class Main extends Thread implements PluginListener {
         if (!module.canRefresh()) return;
 
         lastRefresh = System.currentTimeMillis();
-        if (config.MISCELLANEOUS.PAUSE_FOR > 0) {
+        if (config.MISCELLANEOUS.PAUSE_FOR > 0 && !hero.map.gg) {
             System.out.println("Pausing (logging off): time arrived & module allows refresh");
             setModule(new DisconnectModule(config.MISCELLANEOUS.PAUSE_FOR * 60 * 1000L, I18n.get("module.disconnect.reason.break")));
         } else {
