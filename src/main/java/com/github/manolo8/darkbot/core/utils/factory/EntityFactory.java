@@ -3,6 +3,7 @@ package com.github.manolo8.darkbot.core.utils.factory;
 import com.github.manolo8.darkbot.core.entities.Barrier;
 import com.github.manolo8.darkbot.core.entities.BasePoint;
 import com.github.manolo8.darkbot.core.entities.BattleStation;
+import com.github.manolo8.darkbot.core.entities.BattleStationAsteroid;
 import com.github.manolo8.darkbot.core.entities.Box;
 import com.github.manolo8.darkbot.core.entities.Entity;
 import com.github.manolo8.darkbot.core.entities.MapNpc;
@@ -45,7 +46,7 @@ public enum EntityFactory implements EntityBuilder {
     NPC_BEACON      (MapNpc::new,        "npc-beacon.*"),
     SPACE_BALL      (SpaceBall::new,     "mapIcon_spaceball"),
 
-    CBS_ASTEROID    (BattleStation::new, "asteroid"),
+    CBS_ASTEROID    (BattleStationAsteroid::new, "asteroid"),
     CBS_CONSTRUCTION(BattleStation::new, "cbs-construction"),
     CBS_MODULE      (BattleStation.Module::new, "wreck|module_.*"), // addr+112 moduleType string
     CBS_MODULE_CON  (BattleStation::new, "module-construction"),

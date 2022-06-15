@@ -51,7 +51,7 @@ public class HeroManager extends Player implements Manager, HeroAPI {
     private final HeroItemsAPI items;
 
     private final ShipModeSelectorHandler shipModeHandler;
-    private final MutableShipMode shipMode = new MutableShipMode();
+    private final MutableShipMode shipMode;
 
     public Map map;
 
@@ -92,6 +92,7 @@ public class HeroManager extends Player implements Manager, HeroAPI {
         this.items = items;
 
         this.shipModeHandler = shipModeHandler;
+        this.shipMode = new MutableShipMode(items);
     }
 
     @Override
@@ -134,7 +135,11 @@ public class HeroManager extends Player implements Manager, HeroAPI {
                     .filter(entity -> entity.address == targetPtr)
                     .findAny().orElse(null);
 
-        if (lastTarget != target) setLocalTarget(target);
+        if (lastTarget != target) {
+            setLocalTarget(target);
+            if (target == null)
+                System.out.println("Set local target to null!");
+        }
     }
 
     @Override
@@ -142,7 +147,6 @@ public class HeroManager extends Player implements Manager, HeroAPI {
         super.update(address);
 
         pet.update(API.readMemoryLong(address + 176));
-        clickable.setRadius(0);
         id = API.readMemoryInt(address + 56);
     }
 
@@ -159,12 +163,17 @@ public class HeroManager extends Player implements Manager, HeroAPI {
         jumpPortal((Portal) portal);
     }
 
+    private boolean clickPortal;
     public void jumpPortal(Portal portal) {
         if (!portal.isValid()) return;
         if (System.currentTimeMillis() - portalTime < 500) return; // Minimum delay
         if ((System.currentTimeMillis() - portalTime > 20000 || isNotJumping(portal)) &&
                 (portal.isSelectable() || portals.stream().noneMatch(p -> p != portal && p.isSelectable()))) {
-            API.keyboardClick(keybinds.getCharCode(JUMP_GATE));
+
+            if (clickPortal) portal.trySelect(false);
+            else keybinds.pressKeybind(JUMP_GATE);
+
+            clickPortal = !clickPortal;
             portalTime = System.currentTimeMillis();
         }
     }
@@ -207,12 +216,24 @@ public class HeroManager extends Player implements Manager, HeroAPI {
 
     @Deprecated
     public boolean isInMode(Config.ShipConfig config) {
-        return isInMode(config.CONFIG, config.FORMATION);
+        return isInMode((ShipMode) config);
     }
 
     @Deprecated
     public boolean isInMode(int config, Character formation) {
-        return this.config == config && this.formationChar == formation;
+        if (this.config == config) {
+            if (this.formationChar == formation) return true;
+
+            if (formation != null) {
+                SelectableItem.Formation f = Optional.ofNullable(items.getItem(formation, ItemCategory.DRONE_FORMATIONS))
+                        .map(i -> i.getAs(SelectableItem.Formation.class))
+                        .orElse(null);
+
+                return getFormation() == f;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -225,6 +246,10 @@ public class HeroManager extends Player implements Manager, HeroAPI {
     }
 
     private void setConfigAndFormation(ShipMode mode) {
+        if (mode.getConfiguration() != null && mode.getConfiguration() == Configuration.UNKNOWN)
+            throw new IllegalStateException("Passed UNKNOWN configuration! Use only FIRST or SECOND, " +
+                    "last supplier used: " + shipModeHandler.getLastUsedSupplier().getClass());
+
         if (mode.getConfiguration() != null &&
                 mode.getConfiguration() != getConfiguration()) toggleConfiguration();
 
@@ -242,10 +267,9 @@ public class HeroManager extends Player implements Manager, HeroAPI {
     }
 
     private void setFormation(SelectableItem.Formation formation) {
-        if (formation == null || formation == getFormation() ||
-                System.currentTimeMillis() - formationTime <= 2500L) return;
+        if (formation == null || formation == getFormation()) return;
 
-        main.facadeManager.slotBars.useItem(formation, ItemFlag.NOT_SELECTED)
+        main.facadeManager.slotBars.useItem(formation, 2000, ItemFlag.NOT_SELECTED)
                 .ifSuccessful(r -> formationTime = System.currentTimeMillis());
     }
 
@@ -254,8 +278,8 @@ public class HeroManager extends Player implements Manager, HeroAPI {
         if ((this.formationChar != formation && System.currentTimeMillis() - formationTime > 3500L)
                 || System.currentTimeMillis() - formationTime > 60_000) { // re-click formation after 60sec
 
-            Main.API.keyboardClick(this.formationChar = formation);
-            if (formationChar != null) this.formationTime = System.currentTimeMillis();
+            if (main.facadeManager.slotBars.useItem(this.formationChar = formation))
+                this.formationTime = System.currentTimeMillis();
         }
     }
 
@@ -292,7 +316,7 @@ public class HeroManager extends Player implements Manager, HeroAPI {
     public boolean isInMode(@NotNull ShipMode mode) {
         if (mode instanceof LegacyShipMode && ((LegacyShipMode) mode).isLegacyFormation()) {
             return mode.getConfiguration() == getConfiguration() &&
-                    formationChar == ((LegacyShipMode) mode).getLegacyFormation();
+                    (mode.getFormation() == getFormation() || formationChar == ((LegacyShipMode) mode).getLegacyFormation());
         } else {
             return mode.getConfiguration() == getConfiguration() && mode.getFormation() == getFormation();
         }
@@ -356,11 +380,16 @@ public class HeroManager extends Player implements Manager, HeroAPI {
     }
 
     private static class MutableShipMode implements LegacyShipMode {
+        private final HeroItemsAPI items;
         private Configuration configuration;
         private SelectableItem.Formation formation;
 
         private Character toSelectChar;
         private boolean isLegacyFormation;
+
+        public MutableShipMode(HeroItemsAPI items) {
+            this.items = items;
+        }
 
         @Override
         public Configuration getConfiguration() {
@@ -375,9 +404,9 @@ public class HeroManager extends Player implements Manager, HeroAPI {
         public void set(ShipMode other) {
             this.configuration = other.getConfiguration();
             if (other instanceof LegacyShipMode) {
-                this.formation = null;
                 this.toSelectChar = ((LegacyShipMode) other).getLegacyFormation();
-                this.isLegacyFormation = true;
+
+                setLegacy();
             } else {
                 this.formation = other.getFormation();
                 this.toSelectChar = null;
@@ -387,9 +416,17 @@ public class HeroManager extends Player implements Manager, HeroAPI {
 
         public void setLegacy(int configuration, Character toSelectChar) {
             this.configuration = Configuration.of(configuration);
-            this.formation = null;
             this.toSelectChar = toSelectChar;
-            this.isLegacyFormation = true;
+
+            setLegacy();
+        }
+
+        @Deprecated
+        private void setLegacy() {
+            Item item = items.getItem(toSelectChar, ItemCategory.DRONE_FORMATIONS);
+            this.formation = item == null ? null : item.getAs(SelectableItem.Formation.class);
+
+            this.isLegacyFormation = formation == null;
         }
 
         @Override

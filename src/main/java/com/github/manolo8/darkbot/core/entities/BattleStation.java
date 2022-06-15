@@ -20,6 +20,8 @@ public class BattleStation
     public CircleImpl area = new CircleImpl(0, 0, 1200);
     public int hullId;
 
+    protected boolean asteroid = false;
+
     public BattleStation(int id, long address) {
         super(id);
         this.update(address);
@@ -30,6 +32,8 @@ public class BattleStation
     @Override
     public void update() {
         super.update();
+        clickable.update();
+        if (asteroid) return;
 
         info.update();
         health.update();
@@ -68,6 +72,7 @@ public class BattleStation
     @Override
     public void update(long address) {
         super.update(address);
+        if (asteroid) return;
 
         hullId = API.readMemoryInt(address + 116);
         info.update(API.readMemoryLong(address + 120));

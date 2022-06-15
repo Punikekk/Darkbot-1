@@ -48,13 +48,21 @@ public class LibSetup {
         }
     }
 
-    public static void downloadLib(String path) {
-        downloadLib(libraries.get(path));
+    public static void downloadLib(String libName) {
+        downloadLib(libraries != null ? libraries.get(libName) : null);
     }
 
     public static void downloadLib(Lib lib) {
         if (lib == null) return;
-        Path libPath = Paths.get(lib.path);
+        downloadLib(Paths.get(lib.path), lib);
+    }
+
+    public static void downloadLib(Path libPath) {
+        downloadLib(libPath, libraries != null ? libraries.get(libPath.getFileName().toString()) : null);
+    }
+
+    public static void downloadLib(Path libPath, Lib lib) {
+        if (lib == null) return;
 
         if (Files.exists(libPath)) {
             try {

@@ -43,6 +43,7 @@ import java.util.List;
  */
 public class ConfigManager implements API.Singleton {
 
+    // TODO: 14.08.2022 Fix gson caches TypeTokes for each plugins reload
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .setLenient()

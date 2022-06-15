@@ -57,7 +57,7 @@ import java.util.Objects;
 
 public class Main extends Thread implements PluginListener, BotAPI {
 
-    public static final Version VERSION      = new Version("1.13.17 beta 108");
+    public static final Version VERSION = new Version("1.13.17 beta 109 alpha 19");
     public static final Object UPDATE_LOCKER = new Object();
     public static final Gson GSON            = new GsonBuilder()
             .setPrettyPrinting()
@@ -98,11 +98,13 @@ public class Main extends Thread implements PluginListener, BotAPI {
     private final EventBrokerAPI eventBroker;
 
     private final MainGui form;
-    private final BotInstaller botInstaller;
+    public final BotInstaller botInstaller;
 
     public com.github.manolo8.darkbot.core.itf.Module module; // Legacy module, kept for old plugin compatibility
     private Module newModule;
     public long lastRefresh = System.currentTimeMillis();
+    public int refreshes;
+
     public double avgTick;
     public boolean tickingModule;
 
@@ -355,6 +357,7 @@ public class Main extends Thread implements PluginListener, BotAPI {
         if (this.running == running) return;
         status.send(running);
         this.running = running;
+        API.setUserInput(!running);
     }
 
     private void onRunningToggle(boolean running) {
@@ -365,9 +368,6 @@ public class Main extends Thread implements PluginListener, BotAPI {
         }
 
         eventBroker.sendEvent(new RunningToggleEvent(running));
-
-        if (running) hero.pet.clickable.setRadius(0);
-        else hero.pet.clickable.reset();
     }
 
     public void setBehaviours(List<Behavior> behaviours) {

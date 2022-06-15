@@ -1,5 +1,6 @@
 package com.github.manolo8.darkbot.gui;
 
+import com.github.manolo8.darkbot.Main;
 import com.github.manolo8.darkbot.config.tree.ConfigBuilder;
 import com.github.manolo8.darkbot.core.manager.HeroManager;
 import com.github.manolo8.darkbot.extensions.features.FeatureRegistry;
@@ -39,6 +40,7 @@ public class AdvancedConfig extends JPanel implements PluginListener {
     public static final int HEADER_HEIGHT = 26;
 
     private final PluginAPI api;
+    private final Main main;
 
     private ConfigSetting.Parent<?> baseConfig, lastSelection;
     private @Nullable CompoundConfigSetting<?> extendedConfig;
@@ -55,6 +57,7 @@ public class AdvancedConfig extends JPanel implements PluginListener {
     public AdvancedConfig(PluginAPI api) {
         super(new MigLayout("ins 0, gap 0, fill", "[grow][]", "[][grow]"));
         this.api = api;
+        this.main = api.requireInstance(Main.class);
     }
 
     @Deprecated
@@ -75,6 +78,7 @@ public class AdvancedConfig extends JPanel implements PluginListener {
         super(new BorderLayout());
 
         this.api = api;
+        this.main = api.requireInstance(Main.class);
         this.packed = true;
         setEditingConfig(config);
         rebuildUI();
@@ -129,8 +133,8 @@ public class AdvancedConfig extends JPanel implements PluginListener {
             add(new SearchField(this::setSearch), "grow");
             setSearch("");
 
-            add(createVisibilityDropdown(), "grow, wrap");
-            setVisibility(Visibility.Level.BASIC);
+            add(createVisibilityDropdown(main.config.BOT_SETTINGS.BOT_GUI.VISIBILITY), "grow, wrap");
+            setVisibility(main.config.BOT_SETTINGS.BOT_GUI.VISIBILITY);
 
             JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                     wrapInScrollPane(tabsTree, true),
@@ -157,10 +161,11 @@ public class AdvancedConfig extends JPanel implements PluginListener {
         this.repaint();
     }
 
-    private JComboBox<Visibility.Level> createVisibilityDropdown() {
+    private JComboBox<Visibility.Level> createVisibilityDropdown(Visibility.Level level) {
         JComboBox<Visibility.Level> result = new JComboBox<>(Visibility.Level.values());
         result.addActionListener(a -> setVisibility((Visibility.Level) result.getSelectedItem()));
         result.setRenderer(DropdownRenderer.ofEnum(api, Visibility.Level.class, "misc.visibility_level"));
+        result.setSelectedItem(level);
         return result;
     }
 
@@ -210,6 +215,7 @@ public class AdvancedConfig extends JPanel implements PluginListener {
     }
 
     private void setVisibility(Visibility.Level visibility) {
+        main.config.BOT_SETTINGS.BOT_GUI.VISIBILITY = visibility;
         treeModel.setVisibility(visibility);
         tabsModel.setVisibility(visibility);
         setCorrectRoot();
