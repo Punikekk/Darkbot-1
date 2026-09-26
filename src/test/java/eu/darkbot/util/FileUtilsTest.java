@@ -23,7 +23,8 @@ class FileUtilsTest {
     @Test
     void rejectsZipEntriesOutsideDestination() {
         for (String entry : List.of("../outside", "nested/../../outside", "..\\outside",
-                "/outside", "C:/outside", "C:\\outside", "\\\\server\\share", ".", "nested/..")) {
+                "/outside", "C:/outside", "C:\\outside", "\\\\server\\share",
+                "", "/", "\\", ".", "nested/..")) {
             assertThrows(IOException.class, () -> FileUtils.resolveZipEntry(directory, entry), entry);
         }
         String sibling = "../" + directory.getFileName() + "-other/file";
@@ -34,6 +35,9 @@ class FileUtilsTest {
     void resolvesNestedZipEntries() throws IOException {
         assertEquals(directory.resolve("nested/file"), FileUtils.resolveZipEntry(directory, "nested/file"));
         assertEquals(directory.resolve("nested"), FileUtils.resolveZipEntry(directory, "nested/"));
+        assertEquals(directory.resolve("file"), FileUtils.resolveZipEntry(directory, "nested/../file"));
+        assertEquals(directory.resolve("nested/file"),
+                FileUtils.resolveZipEntry(directory, "nested\\other/../file"));
     }
 
     @Test
@@ -57,6 +61,14 @@ class FileUtilsTest {
     void completedDownloadReplacesExistingUpdate() throws IOException {
         Path target = directory.resolve("plugin.jar");
         Files.writeString(target, "old update");
+        FileUtils.copyReplacing(new ByteArrayInputStream("new update".getBytes(StandardCharsets.UTF_8)), target);
+        assertEquals("new update", Files.readString(target));
+        assertEquals(List.of(target), files());
+    }
+
+    @Test
+    void completedDownloadCreatesNewUpdateWithoutTemporaryFile() throws IOException {
+        Path target = directory.resolve("plugin.jar");
         FileUtils.copyReplacing(new ByteArrayInputStream("new update".getBytes(StandardCharsets.UTF_8)), target);
         assertEquals("new update", Files.readString(target));
         assertEquals(List.of(target), files());
