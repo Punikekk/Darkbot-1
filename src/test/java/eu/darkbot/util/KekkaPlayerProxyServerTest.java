@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.net.ServerSocket;
+import java.net.Socket;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -21,6 +22,19 @@ class KekkaPlayerProxyServerTest {
         try (ServerSocket socket = (ServerSocket) field.get(proxy)) {
             assertTrue(socket.getInetAddress().isLoopbackAddress());
             verify(handler).setLocalProxy(socket.getLocalPort());
+        }
+    }
+
+    @Test
+    void acceptsLoopbackClientConnection() throws Exception {
+        GameAPI.Handler handler = mock(GameAPI.Handler.class);
+        KekkaPlayerProxyServer proxy = new KekkaPlayerProxyServer(handler);
+        Field field = KekkaPlayerProxyServer.class.getDeclaredField("serverSocket");
+        field.setAccessible(true);
+        try (ServerSocket socket = (ServerSocket) field.get(proxy);
+             Socket client = new Socket(socket.getInetAddress(), socket.getLocalPort())) {
+            assertTrue(client.isConnected());
+            assertTrue(client.getInetAddress().isLoopbackAddress());
         }
     }
 }
