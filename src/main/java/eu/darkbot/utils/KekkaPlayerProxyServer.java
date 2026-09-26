@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.BindException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
@@ -29,7 +30,7 @@ public class KekkaPlayerProxyServer extends Thread {
         this.handler = handler;
         for (int port = 7777; port < 7877; port++) {
             try {
-                serverSocket = new ServerSocket(port);
+                serverSocket = new ServerSocket(port, 50, InetAddress.getLoopbackAddress());
 
                 if (serverSocket.isBound()) {
                     handler.setLocalProxy(port);

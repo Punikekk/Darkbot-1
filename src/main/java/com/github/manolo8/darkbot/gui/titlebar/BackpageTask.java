@@ -151,13 +151,14 @@ public class BackpageTask extends Thread {
             int downloadedBytes = 0, progress = 0, partSize = asset.size / 50;
 
             for (ZipEntry entry = zis.getNextEntry(); entry != null; entry = zis.getNextEntry()) {
-                Path to = BACKPAGE_PATH.resolve(entry.getName());
+                Path to = FileUtils.resolveZipEntry(BACKPAGE_PATH, entry.getName());
 
                 if (entry.isDirectory()) {
                     Files.createDirectories(to);
                     continue;
                 }
 
+                Files.createDirectories(to.getParent());
                 try (BufferedOutputStream bos = new BufferedOutputStream(Files.newOutputStream(to))) {
                     double compressionRatio = (double) entry.getCompressedSize() / entry.getSize();
 
