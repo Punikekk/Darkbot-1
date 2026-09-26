@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -74,6 +75,28 @@ public class FileUtils {
                 return i;
         }
         return Integer.MAX_VALUE;
+    }
+
+    /** Resolves an archive entry without allowing it to escape the extraction directory. */
+    public static Path resolveZipEntry(Path directory, String name) throws IOException {
+        Path root = directory.toAbsolutePath().normalize();
+        // ZIP uses '/', but also reject Windows separators when extracting on other platforms.
+        Path target = root.resolve(name.replace('\\', '/')).normalize();
+        if (!target.startsWith(root) || target.equals(root)
+                || name.matches("^[A-Za-z]:.*"))
+            throw new IOException("ZIP entry is outside the extraction directory: " + name);
+        return target;
+    }
+
+    /** Publishes a downloaded file only after the input has been copied successfully. */
+    public static void copyReplacing(InputStream input, Path target) throws IOException {
+        Path temporary = Files.createTempFile(target.toAbsolutePath().getParent(), "download-", ".tmp");
+        try {
+            Files.copy(input, temporary, StandardCopyOption.REPLACE_EXISTING);
+            Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     public static String calcSHA256(Path path) throws IOException {

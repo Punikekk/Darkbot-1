@@ -225,7 +225,7 @@ public class PluginUpdater implements API.Singleton {
                 publish(PluginCard.UpdateStatus.DOWNLOADING);
 
                 FileUtils.ensureDirectoryExists(PluginHandler.PLUGIN_UPDATE_PATH);
-                Files.copy(is, PluginHandler.PLUGIN_UPDATE_PATH.resolve(plugin.getFile().getName()), StandardCopyOption.REPLACE_EXISTING);
+                FileUtils.copyReplacing(is, PluginHandler.PLUGIN_UPDATE_PATH.resolve(plugin.getFile().getName()));
 
                 plugin.setUpdateStatus(Plugin.UpdateStatus.UP_TO_DATE);
                 if (isUpdatingAll) return null;
